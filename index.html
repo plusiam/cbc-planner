@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>개념 기반 프로젝트 설계 웹학습지 — 단일교과 · 융합교과</title>
+<meta name="description" content="개념 기반 프로젝트 설계안(0~3단계)을 브라우저에서 바로 작성하는 웹학습지. 단일교과용과 융합교과용 서식을 한 페이지에서 전환합니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== 색상·치수 변수 ===== */
+  :root {
+    --ink: #1f2933;
+    --ink-2: #52606d;
+    --ink-3: #7b8794;
+    --line: #d9dee3;
+    --line-2: #e4e7eb;
+    --paper: #ffffff;
+    --bg: #f3f5f7;
+    --label-bg: #f5f7f9;
+    --accent: #2d6a9f;           /* 단일교과: 파랑 */
+    --accent-soft: #e7f0f8;
+    --accent-deep: #1b4568;
+    --danger: #b3413a;
+    --ok: #2f855a;
+    --help-bg: #fbfbf9;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.05);
+  }
+  body[data-mode="fusion"] {
+    --accent: #2f7d63;           /* 융합교과: 초록 */
+    --accent-soft: #e6f3ee;
+    --accent-deep: #1b4a3a;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.65;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  b, strong { font-weight: 700; }
+
+  /* ===== 상단 툴바 ===== */
+  .toolbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.94);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: 8px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--accent-deep); font-size: 11pt; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 8px; color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; background: var(--accent); font-size: 13pt;
+  }
+  .tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 6px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); font-size: 9.5pt; font-weight: 500; cursor: pointer;
+    font-family: inherit; transition: background .15s, border-color .15s;
+  }
+  .btn:hover { background: var(--label-bg); border-color: #c5ccd3; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-deep); }
+  .btn.danger { color: var(--danger); }
+  .btn.danger:hover { background: #fbeeed; border-color: #e6b5b1; }
+  .save-status { font-size: 9pt; color: var(--ink-3); padding: 0 6px; white-space: nowrap; }
+  .save-status.saved { color: var(--ok); }
+
+  /* 모드 전환 세그먼트 */
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    padding: 7px 14px; border: 0; background: #fff; color: var(--ink-2); cursor: pointer;
+    font-family: inherit; font-size: 9.5pt; font-weight: 500;
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #fff; }
+
+  /* 드롭다운 */
+  .dd { position: relative; }
+  .dd-menu {
+    display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 280px;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 6px; z-index: 60;
+  }
+  .dd-menu.open { display: block; }
+  .dd-label { font-size: 8.5pt; color: var(--ink-3); padding: 6px 10px 2px; letter-spacing: .02em; }
+  .dd-item {
+    display: flex; flex-direction: column; width: 100%; text-align: left; padding: 8px 10px;
+    border: 0; background: none; border-radius: 6px; cursor: pointer; font-family: inherit;
+  }
+  .dd-item:hover { background: var(--accent-soft); }
+  .dd-item .t { font-size: 9.5pt; font-weight: 600; color: var(--ink); }
+  .dd-item .d { font-size: 8.5pt; color: var(--ink-3); }
+  .dd-sep { height: 1px; background: var(--line-2); margin: 4px 0; }
+
+  /* ===== 본문 ===== */
+  .sheet {
+    max-width: 1040px; margin: 22px auto 60px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 34px 40px 40px;
+  }
+  .doc-head { text-align: center; margin-bottom: 8px; }
+  .doc-head h1 { font-size: 18pt; margin: 0 0 4px; letter-spacing: -.01em; color: var(--ink); }
+  .doc-head .sub { font-size: 9pt; color: var(--ink-3); }
+  .mode-tag {
+    display: inline-block; margin-bottom: 8px; padding: 2px 10px; border-radius: 20px;
+    background: var(--accent-soft); color: var(--accent-deep); font-size: 9pt; font-weight: 600;
+  }
+
+  h2.stage {
+    font-size: 12.5pt; margin: 30px 0 10px; padding: 7px 12px;
+    background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; color: var(--accent-deep);
+  }
+  .caption { font-size: 9.5pt; font-weight: 700; color: var(--ink-2); margin: 14px 0 6px; }
+  .caption .light { font-weight: 400; color: var(--ink-3); }
+
+  table.f { border-collapse: collapse; width: 100%; margin-bottom: 8px; table-layout: fixed; }
+  table.f td, table.f th { border: 1px solid var(--line); padding: 7px 9px; vertical-align: top; }
+  table.f th { background: var(--label-bg); font-weight: 700; text-align: center; font-size: 9.5pt; }
+  td.lbl { background: var(--label-bg); font-weight: 700; text-align: center; width: 120px; font-size: 9.5pt; }
+  td.lbl2 { background: #fafbfc; font-weight: 700; text-align: center; width: 92px; font-size: 9pt; }
+  td.lbl .small, td.lbl2 .small { display: block; font-weight: 400; color: var(--ink-3); font-size: 8.5pt; line-height: 1.3; }
+
+  /* 입력 칸 */
+  textarea {
+    width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 5px 6px;
+    font-family: inherit; font-size: 10pt; line-height: 1.6; color: var(--ink); background: #fff;
+    resize: none; overflow: hidden; min-height: 34px; display: block; transition: border-color .15s, background .15s;
+  }
+  textarea:hover { border-color: var(--line); }
+  textarea:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+  textarea::placeholder { color: #b6bec7; }
+  textarea.pre { white-space: pre; }
+
+  /* 안내문 (접기/펼치기) */
+  details.help { margin-top: 5px; font-size: 9pt; color: var(--ink-3); line-height: 1.55; }
+  details.help summary {
+    cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ink-3); font-size: 8.5pt; user-select: none; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--line-2);
+  }
+  details.help summary::-webkit-details-marker { display: none; }
+  details.help summary:hover { color: var(--accent); border-color: var(--accent); }
+  details.help[open] summary { color: var(--accent); }
+  details.help .body { margin-top: 5px; padding: 6px 9px; background: var(--help-bg); border-left: 3px solid var(--line); border-radius: 0 4px 4px 0; }
+  .ex { color: #8a93a0; }
+  .help b { color: var(--ink-2); }
+
+  /* 큰 안내 상자 */
+  details.note { border: 1px solid var(--line); background: #fafaf8; border-radius: var(--radius); padding: 8px 14px; font-size: 9.5pt; margin: 10px 0 16px; color: var(--ink-2); line-height: 1.6; }
+  details.note summary { cursor: pointer; font-weight: 700; color: var(--ink); list-style: none; display: flex; align-items: center; gap: 6px; }
+  details.note summary::-webkit-details-marker { display: none; }
+  details.note summary::before { content: '▸'; color: var(--accent); transition: transform .15s; }
+  details.note[open] summary::before { transform: rotate(90deg); }
+  details.note .body { margin-top: 8px; }
+  details.note b { color: var(--ink); }
+
+  /* 동적 표 */
+  .grid-wrap { position: relative; }
+  table.f tbody tr.dyn:hover .rowtools { opacity: 1; }
+  .rowtools { position: absolute; right: -2px; transform: translateX(100%); top: 4px; display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity .15s; }
+  .rowtools button { width: 22px; height: 22px; border: 1px solid var(--line); background: #fff; border-radius: 4px; cursor: pointer; font-size: 10px; color: var(--ink-2); line-height: 1; padding: 0; }
+  .rowtools button:hover { background: var(--accent-soft); color: var(--accent); }
+  .rowtools button.del:hover { background: #fbeeed; color: var(--danger); }
+  td.rel { position: relative; }
+  .add-row {
+    display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 8px; padding: 5px 12px;
+    border: 1px dashed var(--line); background: #fff; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 9pt; color: var(--ink-2);
+  }
+  .add-row:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  /* 카드(탐구 목록) */
+  .card { border: 1px solid var(--line); border-radius: var(--radius); margin: 8px 0 12px; overflow: hidden; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; background: var(--label-bg); padding: 6px 12px; font-weight: 700; font-size: 9.5pt; }
+  .card-head .ct { display: flex; gap: 4px; }
+  .card-head .ct button { border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-size: 9pt; color: var(--ink-2); font-family: inherit; }
+  .card-head .ct button:hover { color: var(--accent); border-color: var(--accent); }
+  .card table.f { margin: 0; }
+  .card table.f td { border-left: 0; border-right: 0; }
+  .card table.f td.lbl { width: 140px; }
+  .card table.f tr:last-child td { border-bottom: 0; }
+
+  /* 점검표 */
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; font-size: 9.5pt; }
+  .checks input { margin-top: 5px; accent-color: var(--accent); flex: none; }
+  .checks label { cursor: pointer; }
+  .checks li.done label { color: var(--ink-3); text-decoration: line-through; }
+  .check-meter { display: flex; align-items: center; gap: 10px; font-size: 9pt; color: var(--ink-2); margin: 6px 0 10px; }
+  .check-meter .bar { flex: 1; height: 6px; background: var(--line-2); border-radius: 3px; overflow: hidden; }
+  .check-meter .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+
+  .foot { text-align: center; color: var(--ink-3); font-size: 8.5pt; margin-top: 36px; line-height: 1.8; }
+  .foot a { color: var(--ink-2); }
+
+  /* ===== 단계 내비게이션 ===== */
+  .stepbar {
+    position: sticky; top: 52px; z-index: 40;
+    background: rgba(255,255,255,.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line-2);
+    padding: 6px 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .steps { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+  .steps::-webkit-scrollbar { display: none; }
+  .step {
+    display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink-2); cursor: pointer;
+    font-family: inherit; font-size: 9.5pt; white-space: nowrap; transition: all .15s;
+  }
+  .step:hover { border-color: var(--accent); color: var(--accent); }
+  .step.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step .num { font-weight: 700; }
+  .step .prog { font-size: 8pt; padding: 1px 6px; border-radius: 10px; background: var(--label-bg); color: var(--ink-3); }
+  .step.on .prog { background: rgba(255,255,255,.22); color: #fff; }
+  .step.full .prog { background: #dff3e8; color: var(--ok); }
+  .step.on.full .prog { background: rgba(255,255,255,.3); color: #fff; }
+  .stepbar .btn { padding: 5px 10px; font-size: 9pt; }
+  .stepbar .btn:disabled { opacity: .4; cursor: default; }
+  .viewseg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .viewseg button { padding: 5px 10px; border: 0; background: #fff; color: var(--ink-2); cursor: pointer; font-family: inherit; font-size: 9pt; }
+  .viewseg button + button { border-left: 1px solid var(--line); }
+  .viewseg button.on { background: var(--ink-2); color: #fff; }
+
+  /* 단계별 보기: 활성 섹션만 표시 */
+  body.step-view section.sec:not(.active) { display: none; }
+  section.sec { scroll-margin-top: 110px; }
+  .sec-nav { display: none; justify-content: space-between; margin: 28px 0 0; }
+  body.step-view .sec-nav { display: flex; }
+  .stage-order { font-weight: 400; font-size: 9pt; color: var(--ink-3); margin-left: 8px; }
+
+  /* 배지 */
+  .badge { display: inline-block; font-size: 8.5pt; padding: 1px 8px; border-radius: 10px; margin-left: 8px; font-weight: 500; vertical-align: middle; }
+  .badge.ok { background: #dff3e8; color: var(--ok); }
+  .badge.warn { background: #fdecc8; color: #8a5a00; }
+  .badge.muted { background: var(--label-bg); color: var(--ink-3); }
+
+  /* 참조 패널 */
+  .refpanel {
+    position: fixed; right: 18px; bottom: 18px; width: min(380px, calc(100vw - 36px)); max-height: 60vh; overflow: auto;
+    background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.14); z-index: 80; display: none;
+  }
+  .refpanel.open { display: block; }
+  .refpanel .rh { position: sticky; top: 0; background: var(--accent-soft); color: var(--accent-deep); font-weight: 700; font-size: 9.5pt; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .refpanel .rh button { border: 0; background: none; cursor: pointer; font-size: 12pt; color: var(--ink-2); line-height: 1; }
+  .refpanel .ri { padding: 8px 12px; border-top: 1px solid var(--line-2); font-size: 9.5pt; }
+  .refpanel .ri .rl { font-size: 8.5pt; color: var(--ink-3); font-weight: 600; margin-bottom: 2px; }
+  .refpanel .ri .rv { white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+  .refpanel .ri .rv.empty { color: #b6bec7; font-style: italic; }
+
+  /* 토스트 */
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 9.5pt; opacity: 0; pointer-events: none; transition: all .2s; z-index: 99; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 인쇄 */
+  @page { size: A4; margin: 12mm 12mm; }
+  @media print {
+    body { background: #fff; font-size: 9.5pt; }
+    .toolbar, .stepbar, .refpanel, .sec-nav, .add-row, .rowtools, .card-head .ct, .no-print, .check-meter, .badge { display: none !important; }
+    body.step-view section.sec { display: block !important; }
+    .sheet { max-width: 100%; margin: 0; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+    textarea { border: 0 !important; box-shadow: none !important; padding: 2px 3px; }
+    textarea::placeholder { color: #bbb; }
+    body.hide-help details.help, body.hide-help details.note { display: none !important; }
+    h2.stage, td.lbl, td.lbl2, table.f th, .card-head, .mode-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tr, .card { page-break-inside: avoid; }
+  }
+  @media (max-width: 720px) {
+    .sheet { padding: 18px 14px; margin: 10px; }
+    td.lbl { width: 84px; } td.lbl2 { width: 70px; }
+    .rowtools { transform: none; right: 2px; top: 2px; flex-direction: row; }
+  }
+</style>
+</head>
+<body data-mode="single">
+
+<!-- ===== 상단 툴바 ===== -->
+<div class="toolbar no-print">
+  <div class="brand"><div class="mark">C</div><span>개념 기반 프로젝트 설계 웹학습지</span></div>
+  <div class="tools">
+    <div class="seg" role="tablist" aria-label="서식 선택">
+      <button id="modeSingle" class="on" onclick="setMode('single')">단일교과용</button>
+      <button id="modeFusion" onclick="setMode('fusion')">융합교과용</button>
+    </div>
+    <span class="save-status" id="saveStatus">💾 자동 저장 대기</span>
+    <button class="btn" onclick="toggleAllHelp()" id="helpBtn" title="모든 작성 안내를 펼치거나 접습니다">ⓘ 안내 펼치기</button>
+    <button class="btn" onclick="toggleRefs()" id="refBtn" title="성취기준·핵심 아이디어·단원명 등 앞 단계에서 정한 것을 읽기 전용으로 띄웁니다">🔎 참조 보기</button>
+    <button class="btn danger" onclick="resetMode()" title="현재 서식의 입력 내용을 지웁니다">🗑 초기화</button>
+    <div class="dd">
+      <button class="btn primary" onclick="toggleMenu()">📥 내보내기 ▾</button>
+      <div class="dd-menu" id="ddMenu">
+        <div class="dd-label">노트북LM · AI에 붙여넣기</div>
+        <button class="dd-item" onclick="copyMarkdown();closeMenu()"><span class="t">📋 텍스트(마크다운) 복사</span><span class="d">작성 내용을 클립보드로 — 노트북LM 채팅창에 붙여넣어 점검받기</span></button>
+        <button class="dd-item" onclick="downloadMarkdown();closeMenu()"><span class="t">📝 마크다운 파일(.md) 저장</span><span class="d">노트북LM 소스로 업로드할 때</span></button>
+        <div class="dd-sep"></div>
+        <div class="dd-label">내 작성 내용</div>
+        <button class="dd-item" onclick="downloadHTML(false);closeMenu()"><span class="t">📄 HTML 파일 저장</span><span class="d">입력한 내용이 담긴 완성본 (읽기용)</span></button>
+        <button class="dd-item" onclick="printSheet(false);closeMenu()"><span class="t">🖨 인쇄 / PDF 저장</span><span class="d">작성 안내는 빼고 내용만 인쇄</span></button>
+        <div class="dd-sep"></div>
+        <div class="dd-label">이어서 작업하기</div>
+        <button class="dd-item" onclick="downloadJSON();closeMenu()"><span class="t">💾 작업 파일(.json) 저장</span><span class="d">다른 컴퓨터에서 이어 쓰거나 제출용으로</span></button>
+        <button class="dd-item" onclick="document.getElementById('jsonFile').click();closeMenu()"><span class="t">📂 작업 파일(.json) 불러오기</span><span class="d">저장해 둔 작업 파일을 다시 열기</span></button>
+        <div class="dd-sep"></div>
+        <div class="dd-label">배포용</div>
+        <button class="dd-item" onclick="printSheet(true);closeMenu()"><span class="t">📋 빈 양식 인쇄</span><span class="d">작성 안내가 포함된 빈 서식 A4 출력</span></button>
+      </div>
+    </div>
+    <input type="file" id="jsonFile" accept="application/json,.json" style="display:none" onchange="importJSON(this)">
+  </div>
+</div>
+
+<!-- ===== 단계 내비게이션 (스키마로 렌더링) ===== -->
+<div class="stepbar no-print">
+  <div class="viewseg" title="전체 보기: 모든 단계를 한 페이지에 / 단계별 보기: 현재 단계만">
+    <button id="viewAll" onclick="setView('all')">전체 보기</button>
+    <button id="viewStep" onclick="setView('step')">단계별 보기</button>
+  </div>
+  <div class="steps" id="steps"></div>
+  <button class="btn" id="prevBtn" onclick="stepMove(-1)">‹ 이전</button>
+  <button class="btn" id="nextBtn" onclick="stepMove(1)">다음 ›</button>
+</div>
+
+<!-- ===== 본문 (스키마로 렌더링) ===== -->
+<main class="sheet" id="sheet"></main>
+
+<!-- ===== 참조 패널 ===== -->
+<div class="refpanel no-print" id="refpanel">
+  <div class="rh"><span>🔎 앞 단계에서 정한 것</span><button onclick="toggleRefs()" title="닫기">✕</button></div>
+  <div id="refbody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="schema-single.js"></script>
+<script src="schema-fusion.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
