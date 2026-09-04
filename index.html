@@ -283,7 +283,7 @@
        제목 글자를 감추고, 마크를 버튼들과 같은 줄에 세워 한 줄을 줄인다.
        (문서 제목은 바로 아래 .doc-head 에 그대로 나온다) */
     .brand span { display: none; }
-    .toolbar { justify-content: flex-start; }
+    .toolbar { justify-content: flex-start; align-items: flex-start; }   /* 마크가 버튼 스택 한가운데 뜨지 않도록 첫 줄에 맞춘다 */
     .tools { flex: 1 1 0; min-width: 0; }   /* basis 0 이어야 첫 줄에 브랜드 마크와 나란히 선다 */
     .toolbar .btn { padding: 6px 9px; }
     .seg button { padding: 6px 10px; }
