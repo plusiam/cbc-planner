@@ -23,12 +23,12 @@
 - [x] 검증 — 펜스/설명/순수 JSON 세 형태 · 깨진 JSON 메시지 · rejected 목록 잔류 · 해시 → 대화상자 미리 채움·해시 제거 · 상한 초과 토스트 · 375px
 
 ## 커밋 4 · WebMCP
-- [ ] `webmcp.js` — 기능 감지, 도구 7개 등록, `safe()` 래퍼, `P.webmcp` 가드
-- [ ] `index.html` — 스크립트 태그
-- [ ] `README.md` — Gemini in Chrome · ChatGPT 데스크톱 절차, 플래그·Inspector 테스트법
-- [ ] 검증 — Chrome 150+ 플래그 + Inspector로 도구 7개 · `set_field` 실행 → 칸·토스트·저장 · `unregister()` 후 사라짐 · Safari 콘솔 오류 0
+- [x] `webmcp.js` — 기능 감지, 도구 7개 등록, `safe()` 래퍼, `P.webmcp` 가드
+- [x] `index.html` — 스크립트 태그
+- [x] `README.md` — Gemini in Chrome · ChatGPT 데스크톱 절차, 플래그·Inspector 테스트법
+- [x] 검증 — Chrome 150+ 플래그 + Inspector로 도구 7개 · `set_field` 실행 → 칸·토스트·저장 · `unregister()` 후 사라짐 · Safari 콘솔 오류 0
 
 ## 마무리
-- [ ] 회귀 14항목 재실행 (입력·행 조작·서식 전환·단계별 보기·안내·배지·내보내기 4종·자동 저장·JS 오류)
-- [ ] 프롬프트 팩·schema.json에 학생 식별 정보 요구 문구 없음
+- [x] 회귀 14항목 재실행 (입력·행 조작·서식 전환·단계별 보기·안내·배지·내보내기 4종·자동 저장·JS 오류)
+- [x] 프롬프트 팩·schema.json에 학생 식별 정보 요구 문구 없음
 - [ ] 네 커밋 한 번에 푸시 → 배포 확인

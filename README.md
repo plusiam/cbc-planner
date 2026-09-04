@@ -19,7 +19,7 @@
   - HTML 파일 저장 · 인쇄/PDF 저장 (안내문 제외, 어느 보기에서든 전체 출력)
   - 작업 파일(.json) 저장·불러오기 — 다른 컴퓨터에서 이어 쓰기, 설계안 수합
   - 빈 양식 인쇄 (안내문 포함 A4)
-- AI와 함께 쓰기 — 「AI에게 서식 알려주기」로 안내문을 복사해 채팅에 붙이고, 받은 JSON을 「AI 답변 붙여넣기로 불러오기」에 넣기 (아래 절)
+- AI와 함께 쓰기 — 「AI에게 서식 알려주기」로 안내문을 복사해 채팅에 붙이고, 받은 JSON을 「AI 답변 붙여넣기로 불러오기」에 넣기 · WebMCP 지원 브라우저 에이전트는 칸을 직접 채움 (아래 절)
 
 ## 파일 구성
 
@@ -29,6 +29,7 @@
 - `app.js` — 렌더링·자동 저장·단계 이동·내보내기 엔진, 계획 API(`window.cbcPlanner`)
 - `schema-flat.js` — 서식을 AI가 읽기 좋은 구조로 평탄화 (브라우저·Node 공용)
 - `build-schema.js` → `schema.json` — 공개 스키마. `node build-schema.js`로 생성
+- `webmcp.js` — 브라우저 에이전트용 WebMCP 도구 등록 (미지원 브라우저에서는 아무 일도 하지 않음)
 
 서식 문구나 칸을 고칠 때는 `schema-*.js`만 수정하면 됩니다. 칸의 `key`를 바꾸면 기존 저장 데이터와 어긋나므로 유지하세요. 서식을 고친 뒤에는 `node build-schema.js`를 한 번 실행해 `schema.json`을 다시 만듭니다.
 
@@ -43,6 +44,14 @@ Claude·ChatGPT·Gemini·NotebookLM 어디에서든 대화로 짠 설계안을 �
 안내문에는 학생 실명·명단·연락처를 어떤 칸에도 넣지 말라는 지시가 들어 있습니다. 채팅에 붙이는 자료에도 학생 식별 정보를 섞지 마세요.
 
 AI가 서식의 작성 규칙까지 읽게 하려면 `https://plusiam.github.io/cbc-planner/schema.json`을 함께 주면 됩니다. 안내문에 이미 링크가 들어 있고, 링크를 못 여는 AI에는 파일로 첨부하면 됩니다.
+
+### 브라우저 안의 AI가 직접 채우기 (WebMCP)
+
+이 페이지는 [WebMCP](https://developer.chrome.com/docs/ai/webmcp) 도구를 등록합니다 — `get_schema` · `get_plan` · `set_field` · `add_row` · `add_card` · `apply_plan` · `set_mode`. WebMCP를 지원하는 브라우저 에이전트(Gemini in Chrome, ChatGPT 데스크톱 앱 내장 브라우저)에서 이 페이지를 열어 두고 대화하면, 붙여넣기 없이 에이전트가 칸을 직접 채웁니다. 무엇을 채웠는지 화면 아래 알림으로 보이고, 에이전트가 도구를 쓰기 전에 승인을 묻습니다.
+
+- WebMCP는 아직 표준 초안이며(Chrome 149~156 오리진 트라이얼), 어느 에이전트가 언제 지원하는지는 바뀝니다. 지원하지 않는 브라우저에서는 이 기능만 조용히 빠지고 나머지는 그대로입니다.
+- 개발자 확인 — Chrome 150 이상에서 `chrome://flags/#enable-webmcp-testing`을 켜고 [Model Context Tool Inspector](https://chromewebstore.google.com/detail/gbpdfapgefenggkahomfgkhfehlcenpd) 확장으로 도구 목록을 보고 수동 실행할 수 있습니다. 콘솔에서는 `cbcPlanner.webmcp.tools`로 등록 여부를 확인합니다.
+- 채팅이 다른 탭이나 다른 서버에 있으면(claude.ai, chatgpt.com, NotebookLM) WebMCP로는 닿지 않습니다. 그때는 위의 안내문·붙여넣기 방법을 씁니다.
 
 ## 서식 출처
 
