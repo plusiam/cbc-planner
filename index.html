@@ -45,9 +45,13 @@
   }
   b, strong { font-weight: 700; }
 
+  /* ===== 상단 고정 영역 ===== */
+  /* 툴바와 단계바를 함께 고정한다. 각각 sticky 시키면 툴바가 좁은 화면에서
+     여러 줄로 접힐 때 높이가 커져 단계바가 툴바 뒤로 숨는다. */
+  .topbar { position: sticky; top: 0; z-index: 50; }
+
   /* ===== 상단 툴바 ===== */
   .toolbar {
-    position: sticky; top: 0; z-index: 50;
     background: rgba(255,255,255,.94);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
@@ -201,7 +205,6 @@
 
   /* ===== 단계 내비게이션 ===== */
   .stepbar {
-    position: sticky; top: 52px; z-index: 40;
     background: rgba(255,255,255,.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--line-2);
     padding: 6px 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -229,7 +232,7 @@
 
   /* 단계별 보기: 활성 섹션만 표시 */
   body.step-view section.sec:not(.active) { display: none; }
-  section.sec { scroll-margin-top: 110px; }
+  section.sec { scroll-margin-top: calc(var(--topbar-h, 96px) + 14px); }
   .sec-nav { display: none; justify-content: space-between; margin: 28px 0 0; }
   body.step-view .sec-nav { display: flex; }
   .stage-order { font-weight: 400; font-size: 9pt; color: var(--ink-3); margin-left: 8px; }
@@ -274,13 +277,33 @@
     .sheet { padding: 18px 14px; margin: 10px; }
     td.lbl { width: 84px; } td.lbl2 { width: 70px; }
     .rowtools { transform: none; right: 2px; top: 2px; flex-direction: row; }
+    /* 같은 줄의 보기 전환·이전·다음과 폭을 나눠 가지면 탭 영역이 60px까지 좁아진다.
+       탭을 한 줄 전체로 내리고, 단계 아래 .sec-nav 와 겹치는 이전·다음은 감춘다. */
+    /* 툴바가 네 줄로 접히면 고정 영역이 화면의 3분의 1을 먹는다. 좁은 화면에서는
+       제목 글자를 감추고, 마크를 버튼들과 같은 줄에 세워 한 줄을 줄인다.
+       (문서 제목은 바로 아래 .doc-head 에 그대로 나온다) */
+    .brand span { display: none; }
+    .toolbar { justify-content: flex-start; }
+    .tools { flex: 1 1 0; min-width: 0; }   /* basis 0 이어야 첫 줄에 브랜드 마크와 나란히 선다 */
+    .toolbar .btn { padding: 6px 9px; }
+    .seg button { padding: 6px 10px; }
+    .save-status { padding: 0 2px; font-size: 8.5pt; }
+    .stepbar { padding: 6px 12px; }
+    .stepbar .steps { flex: 0 0 100%; order: 5; padding-bottom: 2px; }
+    .stepbar #prevBtn, .stepbar #nextBtn { display: none; }
+    .toolbar { padding: 6px 12px; gap: 8px; }
   }
 </style>
 </head>
 <body data-mode="single">
 
+<!-- ===== 상단 고정 영역 (툴바 + 단계 내비게이션) =====
+     둘을 한 래퍼로 묶어 sticky 시킨다. 따로 sticky 시키면 툴바가 줄바꿈될 때
+     높이가 달라져 단계바가 툴바 뒤로 숨는다. -->
+<div class="topbar no-print">
+
 <!-- ===== 상단 툴바 ===== -->
-<div class="toolbar no-print">
+<div class="toolbar">
   <div class="brand"><div class="mark">C</div><span>개념 기반 프로젝트 설계 웹학습지</span></div>
   <div class="tools">
     <div class="seg" role="tablist" aria-label="서식 선택">
@@ -315,7 +338,7 @@
 </div>
 
 <!-- ===== 단계 내비게이션 (스키마로 렌더링) ===== -->
-<div class="stepbar no-print">
+<div class="stepbar">
   <div class="viewseg" title="전체 보기: 모든 단계를 한 페이지에 / 단계별 보기: 현재 단계만">
     <button id="viewAll" onclick="setView('all')">전체 보기</button>
     <button id="viewStep" onclick="setView('step')">단계별 보기</button>
@@ -324,6 +347,8 @@
   <button class="btn" id="prevBtn" onclick="stepMove(-1)">‹ 이전</button>
   <button class="btn" id="nextBtn" onclick="stepMove(1)">다음 ›</button>
 </div>
+
+</div><!-- /.topbar -->
 
 <!-- ===== 본문 (스키마로 렌더링) ===== -->
 <main class="sheet" id="sheet"></main>

@@ -261,6 +261,18 @@ function stepMove(d) {
   setStep(list[j].id, true);
 }
 function setView(v) { if (state.view === v) return; state.view = v; applyView(true); renderSteps(); saveNow(); }
+// 고정 영역(툴바+단계바) 높이 — 화면 폭에 따라 툴바가 줄바꿈하므로 상수로 둘 수 없다.
+// CSS 의 section.sec { scroll-margin-top } 과 아래 스크롤 스파이가 이 값을 쓴다.
+let topbarH = 96;
+function syncTopbarH() {
+  const el = $('.topbar'); if (!el) return;
+  topbarH = Math.round(el.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--topbar-h', topbarH + 'px');
+}
+if (window.ResizeObserver) new ResizeObserver(syncTopbarH).observe($('.topbar'));
+// 웹폰트가 늦게 적용되면서 줄 높이가 바뀌는데 ResizeObserver 가 이를 놓치는 경우가 있다
+if (document.fonts) document.fonts.ready.then(syncTopbarH);
+
 // 전체 보기에서 스크롤에 따라 현재 단계 탭을 따라가게
 let scrollTick = false;
 window.addEventListener('scroll', () => {
@@ -270,7 +282,7 @@ window.addEventListener('scroll', () => {
     scrollTick = false;
     const secs = Array.from(document.querySelectorAll('section.sec')).filter(s => s.dataset.sec);
     let best = null;
-    secs.forEach(s => { if (s.getBoundingClientRect().top <= 130) best = s.dataset.sec; });
+    secs.forEach(s => { if (s.getBoundingClientRect().top <= topbarH + 34) best = s.dataset.sec; });
     if (best && best !== curStep()) { state.step[state.mode] = best; renderSteps(); }
   });
 }, { passive: true });
@@ -527,4 +539,5 @@ function printSheet(blank) {
 // ---------- 시작 ----------
 loadSaved();
 renderAll();
+syncTopbarH();
 $('#helpBtn').textContent = state.helpOpen ? 'ⓘ 안내 접기' : 'ⓘ 안내 펼치기';
