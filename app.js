@@ -9,12 +9,12 @@ let state = { mode: 'single', helpOpen: false, view: 'all', step: { single: 's0'
 
 // 각 단계 머리에 붙는 "쓰는 순서" 힌트 (서식 안내문의 ①~⑦ / ①~⑨)
 const ORDER_HINT = {
-  single: { s0: '쓰는 순서 ③ 단원명 · ⑥ 설계 의도', s1: '쓰는 순서 ①·② — 여기서 시작', s2: '쓰는 순서 ④', s3: '쓰는 순서 ⑤ 차시 · ⑦ 흐름 확정' },
+  single: { s0: '쓰는 순서 ③ 단원명 · ⑥ 설계 의도', s1: '쓰는 순서 ①·② — 여기서 시작 · ⑦ 흐름 확정', s2: '쓰는 순서 ④', s3: '쓰는 순서 ⑤ 차시별 계획' },
   fusion: { s0: '쓰는 순서 ⑧ 프로젝트명·설계 의도', s1: '쓰는 순서 ①~⑤ — 여기서 시작 · ⑨ 탐구 목록 확정', s2: '쓰는 순서 ⑥', s3: '쓰는 순서 ⑦ 차시별 계획' }
 };
 // 참조 패널에 띄울 칸 (앞 단계에서 정한 것)
 const REFS = {
-  single: [['단원명 (= 핵심 질문)', 'unit-name'], ['성취기준', 'standards'], ['핵심 개념', 'concept'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['수행과제', 'task-name'], ['준거(S)', 'criteria']],
+  single: [['단원명 (= 핵심 질문)', 'unit-name'], ['성취기준', 'standards'], ['핵심 개념', 'concept'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['학습 흐름 소주제', 'g:flow.topic'], ['수행과제', 'task-name'], ['준거(S)', 'criteria']],
   fusion: [['프로젝트명', 'project-name'], ['성취기준', 'standards'], ['개념적 렌즈', 'lens'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['핵심 질문', 'eq'], ['탐구 목록', 'g:strands.task'], ['수행과제명', 'task-name'], ['준거(S)', 'criteria']]
 };
 function emptyState() { return { f: {}, g: {}, c: {}, k: {} }; }
