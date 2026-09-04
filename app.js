@@ -311,6 +311,17 @@ function rerenderBlock(blockIdStr) {
   renderSteps();
 }
 function findBlock(id) { for (const sec of schema().sections) for (const b of sec.blocks) if (b.id === id) return b; }
+// 점검표는 블록째 다시 그리면 체크박스 DOM 이 새로 만들어져 포커스가 날아간다.
+// (Tab·Space 로 항목을 훑을 수 없게 된다) 그래서 진행률 미터만 고쳐 그린다.
+function updateCheckMeter(blockEl) {
+  const meter = blockEl && blockEl.querySelector('.check-meter'); if (!meter) return;
+  const boxes = blockEl.querySelectorAll('input[type=checkbox][data-kind="k"]');
+  const total = boxes.length, done = [...boxes].filter(b => b.checked).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  meter.children[0].textContent = `점검 ${done} / ${total}`;
+  meter.querySelector('.bar i').style.width = pct + '%';
+  meter.children[2].textContent = pct + '%';
+}
 
 // ---------- 행/카드 조작 ----------
 function gridInsert(id, after) {
@@ -364,7 +375,8 @@ document.addEventListener('change', e => {
   if (el.type === 'checkbox' && el.dataset.kind === 'k') {
     cur().k[el.dataset.key] = el.checked;
     el.closest('li').classList.toggle('done', el.checked);
-    rerenderBlock('ck'); scheduleSave();
+    updateCheckMeter(el.closest('[data-si]'));
+    renderSteps(); scheduleSave();
   }
 });
 document.addEventListener('click', e => { if (!e.target.closest('.dd')) closeMenu(); });
