@@ -512,6 +512,51 @@ function importJSON(input) {
   reader.readAsText(file, 'utf-8');
 }
 
+// ---------- AI 프롬프트 팩 ----------
+// 교사가 채팅(Claude·ChatGPT·Gemini·NotebookLM)에 붙여 넣는 안내문. 링크를 못 여는 AI 도 형식은 맞추도록
+// 칸 키 목록을 인라인으로 넣고, 작성 규칙(help)은 schema.json 이 더한다. 학생 개인정보는 넣지 말라고 못 박는다.
+function promptPack(mode = state.mode) {
+  const S = getSchema().modes[mode];
+  const url = new URL('schema.json', location.href).href;   // 코드에는 상대 경로만 두고 주소는 실행 시점에 만든다
+  const keyLines = S.sections.filter(sec => sec.fields.some(f => f.kind === 'f'))
+    .map(sec => `· ${sec.title.replace(/\s*·.*$/, '')} — ` + sec.fields.filter(f => f.kind === 'f').map(f => `${f.key}(${f.label})`).join(' '));
+  const all = S.sections.flatMap(s => s.fields);
+  const tables = all.filter(f => f.kind === 'g').map(f => `g.${f.id}[${f.columns.map(c => c.key).join(',')}] ${f.label}`);
+  const cards = all.filter(f => f.kind === 'c').map(f => `c.${f.id}[${f.fields.map(x => x.key).join(',')}] ${f.label}`);
+  const example = { app: 'cbc-design-worksheet', version: 1, mode, [mode]: { f: { [S.nameKey]: '…' }, g: { rubric: [{ item: '…', high: '…', mid: '…', low: '…' }] }, c: {}, k: {} } };
+  return [
+    `[cbc-planner 설계안 요청 — ${S.tag}]`,
+    `당신은 초등 교사의 「${S.title}」(${S.tag}) 작성을 돕습니다. 제가 주는 자료로 아래 서식의 칸을 채우고,`,
+    `cbc-planner 웹학습지가 바로 읽는 JSON 한 덩이로 출력해 주세요.`,
+    ``,
+    `■ 서식과 작성 규칙`,
+    `- 칸 목록·작성 안내·점검표 전체: ${url}  (열 수 없으면 제가 파일로 첨부합니다)`,
+    `  각 칸의 help 가 작성 규칙입니다. 규칙에 맞게 쓸 수 없는 칸은 비워 두세요.`,
+    `- 성취기준 코드와 원문은 제가 준 것만 그대로 씁니다. 지어내지 않습니다.`,
+    `- 학생 실명·학급 명단·사진·연락처 등 개인정보는 어떤 칸에도 넣지 않습니다. 제 자료에 섞여 있어도 옮기지 마세요.`,
+    ``,
+    '■ 출력 형식 — ```json 코드 블록 하나만, 앞뒤 설명 없이',
+    JSON.stringify(example),
+    `- f: 한 칸 값(문자열, 줄바꿈은 \\n) · g: 표(행 객체의 배열) · c: 반복 카드 · k: 점검표(비워 둠)`,
+    `- 모르는 칸은 넣지 않습니다(빈 문자열도 넣지 않음).`,
+    ``,
+    `■ 이 서식의 칸 — f 키(라벨)`,
+    ...keyLines,
+    `■ 표·카드 — 키 순서대로 열`,
+    ...tables.concat(cards).map(t => `· ${t}`),
+    ``,
+    `■ 받은 뒤 — cbc-planner > 📥 내보내기 > 「AI 답변 붙여넣기로 불러오기」에 붙여넣습니다.`,
+    ``,
+    `■ 제 자료`,
+    `(학년·교과·성취기준·단원 아이디어를 여기에 적습니다)`,
+  ].join('\n');
+}
+async function copyPromptPack() {
+  const txt = promptPack();
+  try { await navigator.clipboard.writeText(txt); toast('AI용 안내문을 복사했습니다 — 채팅창에 붙여넣고 아래에 자료를 이어 적으세요'); }
+  catch (e) { download('cbc-planner_AI안내문_' + schema().tag + '.txt', txt, 'text/plain;charset=utf-8'); toast('클립보드를 쓸 수 없어 .txt 파일로 저장했습니다'); }
+}
+
 // ---------- 계획 API (window.cbcPlanner) ----------
 // 작업 파일·붙여넣기·URL·WebMCP 네 입구가 모두 이 함수들을 거친다. 형식은 작업 파일(.json)과 같다.
 // 내용 문제로는 throw 하지 않고 rejected 목록으로 돌려준다 — 에이전트가 자기 실수(모르는 키, 서식 뒤바뀜)를 읽어야 한다.

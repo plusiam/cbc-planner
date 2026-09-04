@@ -325,6 +325,9 @@
         <button class="dd-item" onclick="downloadHTML(false);closeMenu()"><span class="t">📄 HTML 파일 저장</span><span class="d">입력한 내용이 담긴 완성본 (읽기용)</span></button>
         <button class="dd-item" onclick="printSheet(false);closeMenu()"><span class="t">🖨 인쇄 / PDF 저장</span><span class="d">작성 안내는 빼고 내용만 인쇄</span></button>
         <div class="dd-sep"></div>
+        <div class="dd-label">AI가 짠 설계안 가져오기</div>
+        <button class="dd-item" onclick="copyPromptPack();closeMenu()"><span class="t">🤖 AI에게 서식 알려주기</span><span class="d">안내문을 클립보드로 — Claude·ChatGPT·Gemini 채팅창에 붙여넣고 설계안 부탁하기</span></button>
+        <div class="dd-sep"></div>
         <div class="dd-label">이어서 작업하기</div>
         <button class="dd-item" onclick="downloadJSON();closeMenu()"><span class="t">💾 작업 파일(.json) 저장</span><span class="d">다른 컴퓨터에서 이어 쓰거나 제출용으로</span></button>
         <button class="dd-item" onclick="document.getElementById('jsonFile').click();closeMenu()"><span class="t">📂 작업 파일(.json) 불러오기</span><span class="d">저장해 둔 작업 파일을 다시 열기</span></button>

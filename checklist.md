@@ -10,11 +10,11 @@
 - [x] 검증 — 콘솔 멱등성 `applyPlan(getPlan())` rejected 0 · 거절 3건 케이스 · 병합/교체 · 다른 서식 setter · 기존 .json 회귀 · 375px 불변
 
 ## 커밋 2 · schema.json + 프롬프트 팩
-- [ ] `build-schema.js` — `node build-schema.js` → `schema.json` (표준 라이브러리만, const 함정 우회)
-- [ ] `app.js` — `promptPack(mode)`, `copyPromptPack()`
-- [ ] `index.html` — 메뉴 「🤖 AI에게 서식 알려주기」
-- [ ] `README.md` — 「AI와 함께 쓰기」, schema.json 재생성 한 줄
-- [ ] 검증 — 두 번 생성해 `git status` 변화 없음 · 브라우저 `getSchema()` === fetch(schema.json) · 팩 30줄 이내 · 실제 채팅 1곳에서 JSON 받아 반영
+- [x] `build-schema.js` — `node build-schema.js` → `schema.json` (표준 라이브러리만, const 함정 우회)
+- [x] `app.js` — `promptPack(mode)`, `copyPromptPack()`
+- [x] `index.html` — 메뉴 「🤖 AI에게 서식 알려주기」
+- [x] `README.md` — 「AI와 함께 쓰기」, schema.json 재생성 한 줄
+- [x] 검증 — 두 번 생성해 `git status` 변화 없음 · 브라우저 `getSchema()` === fetch(schema.json) · 팩 30줄 이내 · 실제 채팅 1곳에서 JSON 받아 반영 ← **사용자 실측 대기**
 
 ## 커밋 3 · 붙여넣기 대화상자 + `#plan=` 링크
 - [ ] `index.html` — `<dialog id="pasteDlg">`, 메뉴 「📋 AI 답변 붙여넣기로 불러오기」, `.dd-menu` 스크롤, CSS
