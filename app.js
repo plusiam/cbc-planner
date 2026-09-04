@@ -283,7 +283,7 @@ window.addEventListener('scroll', () => {
     const secs = Array.from(document.querySelectorAll('section.sec')).filter(s => s.dataset.sec);
     let best = null;
     secs.forEach(s => { if (s.getBoundingClientRect().top <= topbarH + 34) best = s.dataset.sec; });
-    if (best && best !== curStep()) { state.step[state.mode] = best; renderSteps(); }
+    if (best && best !== curStep()) { state.step[state.mode] = best; renderSteps(); scheduleSave(); }
   });
 }, { passive: true });
 
@@ -300,6 +300,7 @@ function toggleRefs() {
   state.refsOpen = !state.refsOpen;
   $('#refpanel').classList.toggle('open', state.refsOpen);
   if (state.refsOpen) renderRefs();
+  saveNow();
 }
 function rerenderBlock(blockIdStr) {
   // 특정 블록(id로 찾음)만 다시 그린다 — 행 추가/삭제 뒤 사용
@@ -398,6 +399,7 @@ function loadSaved() {
     state.helpOpen = !!s.helpOpen;
     state.view = s.view === 'step' ? 'step' : 'all';
     if (s.step && typeof s.step === 'object') state.step = Object.assign({ single: 's0', fusion: 's0' }, s.step);
+    state.refsOpen = !!s.refsOpen;
     ['single', 'fusion'].forEach(m => { state[m] = Object.assign(emptyState(), s[m] || {}); });
     setStatus('✅ 불러오기 완료', true);
   } catch (e) { console.warn('저장 데이터 복원 실패', e); }
@@ -497,10 +499,11 @@ function importJSON(input) {
       if (d.app !== 'cbc-design-worksheet') throw new Error('형식이 다른 파일');
       if (!confirm('작업 파일을 불러오면 현재 입력 내용을 덮어씁니다. 계속할까요?')) return;
       ['single', 'fusion'].forEach(m => { if (d[m]) state[m] = Object.assign(emptyState(), d[m]); });
-      if (d.mode) state.mode = d.mode;
+      if (d.mode === 'single' || d.mode === 'fusion') state.mode = d.mode;   // 모르는 서식 이름이면 현재 서식을 그대로 둔다
       renderAll(); saveNow(); toast('작업 파일을 불러왔습니다');
     } catch (e) { alert('이 웹학습지에서 저장한 작업 파일(.json)이 아닙니다.'); }
-    input.value = '';
+    // 취소하고 나가는 길에서도 비워야 같은 파일을 다시 고를 때 change 가 뜬다
+    finally { input.value = ''; }
   };
   reader.readAsText(file, 'utf-8');
 }
@@ -552,4 +555,5 @@ function printSheet(blank) {
 loadSaved();
 renderAll();
 syncTopbarH();
+$('#refpanel').classList.toggle('open', state.refsOpen);
 $('#helpBtn').textContent = state.helpOpen ? 'ⓘ 안내 접기' : 'ⓘ 안내 펼치기';
