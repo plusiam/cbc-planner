@@ -20,6 +20,8 @@ const REFS = {
 function emptyState() { return { f: {}, g: {}, c: {}, k: {} }; }
 const cur = () => state[state.mode];
 const schema = () => SCHEMAS[state.mode];
+const MODES = ['single', 'fusion'];
+const isMode = m => m === 'single' || m === 'fusion';   // SCHEMAS[m] 검사는 'constructor' 같은 이름이 통과한다
 
 // ---------- 유틸 ----------
 const esc = s => String(s ?? '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -33,18 +35,14 @@ function autoGrow(el) { el.style.height = 'auto'; el.style.height = (el.scrollHe
 function growAll(root = document) { root.querySelectorAll('textarea').forEach(autoGrow); }
 
 // ---------- 초기 행 데이터 ----------
-// grid.init 이 숫자면 빈 행 n개, 배열이면 각 행의 초기값
-function gridInitRows(block) {
-  if (Array.isArray(block.init)) return block.init.map(r => Object.fromEntries(block.keys.map((k, i) => [k, r[i] || ''])));
-  return Array.from({ length: block.init || 1 }, () => Object.fromEntries(block.keys.map(k => [k, ''])));
-}
-function ensureGrid(block) {
-  const g = cur().g;
+// gridInitRows 는 schema-flat.js 에 있다. st 를 넘기면 현재 서식이 아닌 쪽 상태에도 쓸 수 있다.
+function ensureGrid(block, st = cur()) {
+  const g = st.g;
   if (!Array.isArray(g[block.id]) || g[block.id].length === 0) g[block.id] = gridInitRows(block);
   return g[block.id];
 }
-function ensureCards(block) {
-  const c = cur().c;
+function ensureCards(block, st = cur()) {
+  const c = st.c;
   if (!Array.isArray(c[block.id]) || c[block.id].length === 0)
     c[block.id] = Array.from({ length: block.init || 1 }, () => Object.fromEntries(block.fields.map(f => [f.key, ''])));
   return c[block.id];
@@ -311,7 +309,7 @@ function rerenderBlock(blockIdStr) {
   if (blockIdStr === 'rubric') updateRubricBadge();
   renderSteps();
 }
-function findBlock(id) { for (const sec of schema().sections) for (const b of sec.blocks) if (b.id === id) return b; }
+function findBlock(id, m = state.mode) { for (const sec of SCHEMAS[m].sections) for (const b of sec.blocks) if (b.id === id) return b; }
 // 점검표는 블록째 다시 그리면 체크박스 DOM 이 새로 만들어져 포커스가 날아간다.
 // (Tab·Space 로 항목을 훑을 수 없게 된다) 그래서 진행률 미터만 고쳐 그린다.
 function updateCheckMeter(blockEl) {
@@ -406,7 +404,11 @@ function loadSaved() {
 }
 
 // ---------- 툴바 동작 ----------
-function setMode(m) { if (state.mode === m) return; state.mode = m; renderAll(); saveNow(); window.scrollTo({ top: 0 }); }
+function setMode(m) {
+  if (!isMode(m)) return { ok: false, reason: "서식은 'single' 또는 'fusion'" };
+  if (state.mode !== m) { state.mode = m; renderAll(); saveNow(); window.scrollTo({ top: 0 }); }
+  return { ok: true, mode: m };
+}
 function toggleAllHelp() {
   state.helpOpen = !state.helpOpen;
   document.querySelectorAll('details.help, details.note').forEach(d => d.open = state.helpOpen);
@@ -485,9 +487,12 @@ async function copyMarkdown() {
 function downloadMarkdown() { download(docName() + '.md', toMarkdown(), 'text/markdown;charset=utf-8'); toast('마크다운 파일을 저장했습니다'); }
 
 // ---------- JSON 작업 파일 ----------
+// 이 형식이 붙여넣기·URL·WebMCP 가 공유하는 정본이다 (계획 API 참고)
+function planPayload() {
+  return { app: 'cbc-design-worksheet', version: 1, savedAt: new Date().toISOString(), mode: state.mode, single: state.single, fusion: state.fusion };
+}
 function downloadJSON() {
-  const payload = { app: 'cbc-design-worksheet', version: 1, savedAt: new Date().toISOString(), mode: state.mode, single: state.single, fusion: state.fusion };
-  download(docName() + '.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+  download(docName() + '.json', JSON.stringify(planPayload(), null, 2), 'application/json;charset=utf-8');
   toast('작업 파일을 저장했습니다 (단일·융합 두 서식 모두 포함)');
 }
 function importJSON(input) {
@@ -498,15 +503,154 @@ function importJSON(input) {
       const d = JSON.parse(reader.result);
       if (d.app !== 'cbc-design-worksheet') throw new Error('형식이 다른 파일');
       if (!confirm('작업 파일을 불러오면 현재 입력 내용을 덮어씁니다. 계속할까요?')) return;
-      ['single', 'fusion'].forEach(m => { if (d[m]) state[m] = Object.assign(emptyState(), d[m]); });
-      if (d.mode === 'single' || d.mode === 'fusion') state.mode = d.mode;   // 모르는 서식 이름이면 현재 서식을 그대로 둔다
-      renderAll(); saveNow(); toast('작업 파일을 불러왔습니다');
+      const r = applyPlan(d, { merge: false });
+      toast('작업 파일을 불러왔습니다' + (r.rejected.length ? ` (서식에 없는 항목 ${r.rejected.length}건은 건너뜀)` : ''));
     } catch (e) { alert('이 웹학습지에서 저장한 작업 파일(.json)이 아닙니다.'); }
     // 취소하고 나가는 길에서도 비워야 같은 파일을 다시 고를 때 change 가 뜬다
     finally { input.value = ''; }
   };
   reader.readAsText(file, 'utf-8');
 }
+
+// ---------- 계획 API (window.cbcPlanner) ----------
+// 작업 파일·붙여넣기·URL·WebMCP 네 입구가 모두 이 함수들을 거친다. 형식은 작업 파일(.json)과 같다.
+// 내용 문제로는 throw 하지 않고 rejected 목록으로 돌려준다 — 에이전트가 자기 실수(모르는 키, 서식 뒤바뀜)를 읽어야 한다.
+let FLAT_SCHEMA;
+function getSchema() { return FLAT_SCHEMA || (FLAT_SCHEMA = flattenSchema(SCHEMAS)); }
+function getPlan() { return JSON.parse(JSON.stringify(planPayload())); }   // 깊은 복사 — 참조로 상태를 건드리지 못하게
+
+// 서식별 유효 키 색인 — f: Set, g/c: {id → 열 키 배열}, k: Set
+const PLAN_INDEX = {};
+function planIndex(mode) {
+  if (PLAN_INDEX[mode]) return PLAN_INDEX[mode];
+  const ix = { f: new Set(), g: {}, c: {}, k: new Set() };
+  getSchema().modes[mode].sections.forEach(sec => sec.fields.forEach(fd => {
+    if (fd.kind === 'f') ix.f.add(fd.key);
+    else if (fd.kind === 'g') ix.g[fd.id] = fd.columns.map(c => c.key);
+    else if (fd.kind === 'c') ix.c[fd.id] = fd.fields.map(f => f.key);
+    else if (fd.kind === 'k') fd.items.forEach(it => ix.k.add(it.id));
+  }));
+  return PLAN_INDEX[mode] = ix;
+}
+// 칸 값 강제 — 문자열만 받는다. 배열은 줄바꿈으로 잇는다(준거 1) 2) 3) 을 배열로 내는 AI 대응). 객체는 null(거절).
+function str(v) {
+  if (v == null) return '';
+  if (Array.isArray(v)) return v.map(x => str(x) ?? '').join('\n');
+  if (typeof v === 'object') return null;
+  return String(v);
+}
+// 표·카드의 행 하나를 정규화 — 배열이면 열 순서로, 객체면 키로. 모르는 열은 rejected 에 적고 행은 살린다.
+function normRow(raw, keys, path, rejected) {
+  const row = Object.fromEntries(keys.map(k => [k, '']));
+  if (Array.isArray(raw)) { raw.forEach((v, i) => { if (i < keys.length) row[keys[i]] = str(v) ?? ''; }); return row; }
+  if (!raw || typeof raw !== 'object') { rejected.push({ path, reason: '행은 객체 또는 배열이어야 합니다' }); return null; }
+  for (const k of Object.keys(raw)) {
+    if (!keys.includes(k)) { rejected.push({ path: `${path}.${k}`, reason: '표에 없는 열' }); continue; }
+    const v = str(raw[k]); if (v === null) { rejected.push({ path: `${path}.${k}`, reason: '문자열이 아님' }); continue; }
+    row[k] = v;
+  }
+  return row;
+}
+// 설계안 전체 반영. merge:false 는 서식을 비우고 새로 채움, merge:true 는 값이 있는 칸만 덮어씀(표·카드는 행이 하나라도 있으면 표째 교체).
+function applyPlan(payload, { merge = false } = {}) {
+  const rejected = [], applied = { f: 0, g: 0, c: 0, k: 0 };
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
+    return { ok: false, mode: state.mode, applied, rejected: [{ path: '', reason: 'JSON 객체가 아닙니다' }] };
+  let mode = null;
+  if (payload.mode !== undefined) { if (isMode(payload.mode)) mode = payload.mode; else rejected.push({ path: 'mode', reason: "서식은 'single' 또는 'fusion'" }); }
+  for (const key of Object.keys(payload))
+    if (!['app', 'version', 'savedAt', 'mode', 'single', 'fusion'].includes(key)) rejected.push({ path: key, reason: '알 수 없는 항목 — 서식 내용은 single/fusion 아래 f·g·c·k 에 둡니다' });
+  for (const m of MODES) {
+    const src = payload[m];
+    if (src === undefined) continue;
+    if (!src || typeof src !== 'object' || Array.isArray(src)) { rejected.push({ path: m, reason: '객체가 아닙니다' }); continue; }
+    const ix = planIndex(m), dst = merge ? state[m] : emptyState();
+    for (const bucket of Object.keys(src)) {
+      if (!['f', 'g', 'c', 'k'].includes(bucket)) { rejected.push({ path: `${m}.${bucket}`, reason: '알 수 없는 구획 — f·g·c·k 만' }); continue; }
+      const part = src[bucket];
+      if (!part || typeof part !== 'object' || Array.isArray(part)) { rejected.push({ path: `${m}.${bucket}`, reason: '객체가 아닙니다' }); continue; }
+      for (const id of Object.keys(part)) {
+        const path = `${m}.${bucket}.${id}`, raw = part[id];
+        if (bucket === 'f') {
+          if (!ix.f.has(id)) { rejected.push({ path, reason: '서식에 없는 칸' }); continue; }
+          const v = str(raw); if (v === null) { rejected.push({ path, reason: '문자열이 아님' }); continue; }
+          if (merge && !v.trim()) continue;
+          dst.f[id] = v; applied.f++;
+        } else if (bucket === 'k') {
+          if (!ix.k.has(id)) { rejected.push({ path, reason: '점검표에 없는 항목' }); continue; }
+          dst.k[id] = !!raw; applied.k++;
+        } else {
+          const keys = ix[bucket][id];
+          if (!keys) { rejected.push({ path, reason: bucket === 'g' ? '서식에 없는 표' : '서식에 없는 카드' }); continue; }
+          if (!Array.isArray(raw)) { rejected.push({ path, reason: '행의 배열이어야 합니다' }); continue; }
+          const rows = raw.map((r, i) => normRow(r, keys, `${path}[${i}]`, rejected)).filter(Boolean);
+          if (!rows.length) continue;
+          dst[bucket][id] = rows; applied[bucket] += rows.length;
+        }
+      }
+    }
+    state[m] = dst;
+  }
+  if (mode) state.mode = mode;
+  renderAll(); saveNow();
+  return { ok: true, mode: state.mode, applied, rejected };
+}
+// 아래 부분 setter 는 입력 핸들러와 같은 최소 갱신만 한다 — renderAll 은 포커스와 펼친 안내를 잃고 연속 호출 시 깜빡인다.
+// 현재 서식이 아닌 쪽에 쓰면 상태와 저장만 바꾼다(전환할 때 renderAll 이 그린다).
+function setField(mode, key, value) {
+  mode = mode || state.mode;
+  if (!isMode(mode)) return { ok: false, reason: "서식은 'single' 또는 'fusion'" };
+  if (!planIndex(mode).f.has(key)) return { ok: false, reason: `서식에 없는 칸: ${key}` };
+  const v = str(value); if (v === null) return { ok: false, reason: '값은 문자열이어야 합니다' };
+  state[mode].f[key] = v;
+  if (mode === state.mode) {
+    const el = $(`#sheet textarea[data-kind="f"][data-key="${key}"]`);
+    if (el) { el.value = v; autoGrow(el); }
+    if (key === 'criteria') updateRubricBadge();
+    if (state.refsOpen) renderRefs();
+  }
+  scheduleSave();
+  return { ok: true, mode, key, value: v };
+}
+function addRow(mode, gridId, row) {
+  mode = mode || state.mode;
+  if (!isMode(mode)) return { ok: false, reason: "서식은 'single' 또는 'fusion'" };
+  const b = findBlock(gridId, mode);
+  if (!b || b.type !== 'grid') return { ok: false, reason: `서식에 없는 표: ${gridId}` };
+  const rejected = [], nr = normRow(row || {}, b.keys, gridId, rejected);
+  if (!nr) return { ok: false, reason: rejected[0].reason };
+  const rows = ensureGrid(b, state[mode]); rows.push(nr);
+  if (mode === state.mode) rerenderBlock(gridId);
+  scheduleSave();
+  return { ok: true, mode, gridId, index: rows.length - 1, rows: rows.length, rejected };
+}
+function addCard(mode, cardsId, card) {
+  mode = mode || state.mode;
+  if (!isMode(mode)) return { ok: false, reason: "서식은 'single' 또는 'fusion'" };
+  const b = findBlock(cardsId, mode);
+  if (!b || b.type !== 'cards') return { ok: false, reason: `서식에 없는 카드: ${cardsId}` };
+  const rejected = [], nc = normRow(card || {}, b.fields.map(f => f.key), cardsId, rejected);
+  if (!nc) return { ok: false, reason: rejected[0].reason };
+  const cards = ensureCards(b, state[mode]); cards.push(nc);
+  if (mode === state.mode) rerenderBlock(cardsId);
+  scheduleSave();
+  return { ok: true, mode, cardsId, index: cards.length - 1, cards: cards.length, rejected };
+}
+function setCheck(mode, id, on) {
+  mode = mode || state.mode;
+  if (!isMode(mode)) return { ok: false, reason: "서식은 'single' 또는 'fusion'" };
+  if (!planIndex(mode).k.has(id)) return { ok: false, reason: `점검표에 없는 항목: ${id}` };
+  state[mode].k[id] = !!on;
+  if (mode === state.mode) {
+    const cb = document.getElementById('ck-' + id);   // 블록을 다시 그리지 않는다 — 포커스가 날아간다
+    if (cb) { cb.checked = !!on; cb.closest('li').classList.toggle('done', !!on); updateCheckMeter(cb.closest('[data-si]')); }
+    renderSteps();
+  }
+  scheduleSave();
+  return { ok: true, mode, id, checked: !!on };
+}
+// 콘솔·Playwright·브라우저 확장·webmcp.js 가 모두 이 표면을 쓴다. state 등은 const 라 window 에 없다.
+window.cbcPlanner = { applyPlan, getPlan, setField, addRow, addCard, setCheck, setMode, getSchema };
 
 // ---------- 정적 HTML (저장용·빈 양식 인쇄용) ----------
 function buildStaticHTML(blank) {

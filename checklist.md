@@ -3,11 +3,11 @@
 계획 원본: `~/.claude/plans/sprightly-snuggling-starlight.md` · 결정 이유: [context-notes.md](context-notes.md)
 
 ## 커밋 1 · 계획 API `window.cbcPlanner`
-- [ ] `schema-flat.js` — `htmlToText`, `gridInitRows`(app.js에서 이동), `flattenSchema`
-- [ ] `app.js` — `applyPlan` / `getPlan` / `setField` / `addRow` / `addCard` / `setCheck` / `setMode`(가드·반환값) / `getSchema`, `window.cbcPlanner` 노출
-- [ ] `app.js` — `importJSON`이 `applyPlan`을 거치게, `ensureGrid/ensureCards/findBlock`에 서식 인자
-- [ ] `index.html` — `schema-flat.js` 스크립트 태그
-- [ ] 검증 — 콘솔 멱등성 `applyPlan(getPlan())` rejected 0 · 거절 3건 케이스 · 병합/교체 · 다른 서식 setter · 기존 .json 회귀 · 375px 불변
+- [x] `schema-flat.js` — `htmlToText`, `gridInitRows`(app.js에서 이동), `flattenSchema`
+- [x] `app.js` — `applyPlan` / `getPlan` / `setField` / `addRow` / `addCard` / `setCheck` / `setMode`(가드·반환값) / `getSchema`, `window.cbcPlanner` 노출
+- [x] `app.js` — `importJSON`이 `applyPlan`을 거치게, `ensureGrid/ensureCards/findBlock`에 서식 인자
+- [x] `index.html` — `schema-flat.js` 스크립트 태그
+- [x] 검증 — 콘솔 멱등성 `applyPlan(getPlan())` rejected 0 · 거절 3건 케이스 · 병합/교체 · 다른 서식 setter · 기존 .json 회귀 · 375px 불변
 
 ## 커밋 2 · schema.json + 프롬프트 팩
 - [ ] `build-schema.js` — `node build-schema.js` → `schema.json` (표준 라이브러리만, const 함정 우회)
