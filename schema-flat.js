@@ -28,7 +28,7 @@ function flattenSchema(schemas) {
       let caption = '';
       sec.blocks.forEach(b => {
         if (b.type === 'note') out.notes.push({ title: htmlToText(b.title), text: htmlToText(b.html) });
-        else if (b.type === 'caption') caption = htmlToText(b.html);
+        else if (b.type === 'caption') caption = htmlToText(String(b.html || '').replace(/<span class="light">[\s\S]*?<\/span>/g, ''));   // 설명 꼬리(light)는 라벨에서 뺀다
         else if (b.type === 'kv') b.rows.forEach(r => out.fields.push({
           kind: 'f', key: r.key,
           label: r.group ? `${r.group} — ${r.sub}` : r.label + (r.sub2 ? ' ' + r.sub2 : ''),

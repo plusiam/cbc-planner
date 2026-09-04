@@ -9,7 +9,7 @@
 
 - 단일교과 / 융합교과 서식 전환 (상단 버튼)
 - 단계 탭(0 표지 · 1 교육과정 분석 · 2 평가 계획 · 3 학습 계획 · 탈고 점검)과 탭별 진행률, 「전체 보기 / 단계별 보기」 전환, 이전·다음 이동
-- 자동 저장 (브라우저 localStorage) · 행 추가·이동·삭제 · 탐구 목록 카드 추가
+- 자동 저장 (브라우저 localStorage) · 행 추가·이동·삭제
 - 칸마다 「ⓘ 작성 안내」 접기/펼치기, 툴바에서 한꺼번에 펼치기/접기
 - 「🔎 참조 보기」 — 성취기준·핵심 아이디어·단원명 등 앞 단계에서 정한 것을 읽기 전용 패널로
 - 준거(S) 개수와 평가 기준표 행 수 대조 배지
@@ -47,7 +47,7 @@ AI가 서식의 작성 규칙까지 읽게 하려면 `https://plusiam.github.io/
 
 ### 브라우저 안의 AI가 직접 채우기 (WebMCP)
 
-이 페이지는 [WebMCP](https://developer.chrome.com/docs/ai/webmcp) 도구를 등록합니다 — `get_schema` · `get_plan` · `set_field` · `add_row` · `add_card` · `apply_plan` · `set_mode`. WebMCP를 지원하는 브라우저 에이전트(Gemini in Chrome, ChatGPT 데스크톱 앱 내장 브라우저)에서 이 페이지를 열어 두고 대화하면, 붙여넣기 없이 에이전트가 칸을 직접 채웁니다. 무엇을 채웠는지 화면 아래 알림으로 보이고, 에이전트가 도구를 쓰기 전에 승인을 묻습니다.
+이 페이지는 [WebMCP](https://developer.chrome.com/docs/ai/webmcp) 도구를 등록합니다 — `get_schema` · `get_plan` · `set_field` · `add_row` · `apply_plan` · `set_mode`. WebMCP를 지원하는 브라우저 에이전트(Gemini in Chrome, ChatGPT 데스크톱 앱 내장 브라우저)에서 이 페이지를 열어 두고 대화하면, 붙여넣기 없이 에이전트가 칸을 직접 채웁니다. 무엇을 채웠는지 화면 아래 알림으로 보이고, 에이전트가 도구를 쓰기 전에 승인을 묻습니다.
 
 - WebMCP는 아직 표준 초안이며(Chrome 149~156 오리진 트라이얼), 어느 에이전트가 언제 지원하는지는 바뀝니다. 지원하지 않는 브라우저에서는 이 기능만 조용히 빠지고 나머지는 그대로입니다.
 - 개발자 확인 — Chrome 150 이상에서 `chrome://flags/#enable-webmcp-testing`을 켜고 [Model Context Tool Inspector](https://chromewebstore.google.com/detail/gbpdfapgefenggkahomfgkhfehlcenpd) 확장으로 도구 목록을 보고 수동 실행할 수 있습니다. 콘솔에서는 `cbcPlanner.webmcp.tools`로 등록 여부를 확인합니다.

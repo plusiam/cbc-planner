@@ -10,12 +10,12 @@ let state = { mode: 'single', helpOpen: false, view: 'all', step: { single: 's0'
 // 각 단계 머리에 붙는 "쓰는 순서" 힌트 (서식 안내문의 ①~⑦ / ①~⑨)
 const ORDER_HINT = {
   single: { s0: '쓰는 순서 ③ 단원명 · ⑥ 설계 의도', s1: '쓰는 순서 ①·② — 여기서 시작', s2: '쓰는 순서 ④', s3: '쓰는 순서 ⑤ 차시 · ⑦ 흐름 확정' },
-  fusion: { s0: '쓰는 순서 ⑧ 프로젝트명·설계 의도', s1: '쓰는 순서 ①~⑤ — 여기서 시작', s2: '쓰는 순서 ⑥', s3: '쓰는 순서 ⑦ 차시 · ⑨ 탐구 목록 확정' }
+  fusion: { s0: '쓰는 순서 ⑧ 프로젝트명·설계 의도', s1: '쓰는 순서 ①~⑤ — 여기서 시작 · ⑨ 탐구 목록 확정', s2: '쓰는 순서 ⑥', s3: '쓰는 순서 ⑦ 차시별 계획' }
 };
 // 참조 패널에 띄울 칸 (앞 단계에서 정한 것)
 const REFS = {
   single: [['단원명 (= 핵심 질문)', 'unit-name'], ['성취기준', 'standards'], ['핵심 개념', 'concept'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['수행과제', 'task-name'], ['준거(S)', 'criteria']],
-  fusion: [['프로젝트명', 'project-name'], ['성취기준', 'standards'], ['개념적 렌즈', 'lens'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['핵심 질문', 'eq'], ['탐구 과제', 'tasks'], ['수행과제명', 'task-name'], ['준거(S)', 'criteria']]
+  fusion: [['프로젝트명', 'project-name'], ['성취기준', 'standards'], ['개념적 렌즈', 'lens'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['핵심 질문', 'eq'], ['탐구 목록', 'g:strands.task'], ['수행과제명', 'task-name'], ['준거(S)', 'criteria']]
 };
 function emptyState() { return { f: {}, g: {}, c: {}, k: {} }; }
 const cur = () => state[state.mode];
@@ -290,8 +290,10 @@ function renderRefs() {
   const body = $('#refbody'); if (!body) return;
   const m = cur();
   body.innerHTML = (REFS[state.mode] || []).map(([label, key]) => {
-    const v = (m.f[key] || '').trim();
-    return `<div class="ri"><div class="rl">${esc(label)}</div><div class="rv${v ? '' : ' empty'}">${esc(v || '아직 비어 있음')}</div></div>`;
+    // 'g:표id.열' 이면 표의 그 열을 번호 목록으로 (탐구 목록처럼 행 단위 항목)
+    const gm = key.match(/^g:([^.]+)\.(.+)$/);
+    const v = gm ? (m.g[gm[1]] || []).map(r => (r[gm[2]] || '').trim()).filter(Boolean).map((t, i) => `${i + 1}) ${t}`).join('\n') : (m.f[key] || '').trim();
+    return `<div class="ri"><div class="rl">${esc(label)}</div><div class="rv${v ? '' : ' empty'}">${esc(v || '아직 비어 있음').replace(/\n/g, '<br>')}</div></div>`;
   }).join('');
 }
 function toggleRefs() {
@@ -366,7 +368,7 @@ document.addEventListener('input', e => {
   else if (d.kind === 'g') m.g[d.grid][+d.idx][d.key] = el.value;
   else if (d.kind === 'c') m.c[d.cards][+d.idx][d.key] = el.value;
   if (d.key === 'criteria') updateRubricBadge();
-  if (state.refsOpen && d.kind === 'f') renderRefs();
+  if (state.refsOpen && (d.kind === 'f' || d.kind === 'g')) renderRefs();
   scheduleSave();
 });
 document.addEventListener('change', e => {

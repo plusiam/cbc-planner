@@ -62,21 +62,11 @@
     },
     {
       name: 'add_row',
-      description: '표에 행을 하나 덧붙인다. rubric·other 는 두 서식 공통, flow·lessons 는 단일교과용, open·close 는 융합교과용. 표를 처음부터 채울 때는 apply_plan 의 g 에 행 배열을 넘기는 편이 낫다(빈 자리표시 행이 남지 않는다).',
-      inputSchema: { type: 'object', required: ['gridId', 'row'], properties: { mode: MODE, gridId: { type: 'string', enum: ['rubric', 'other', 'flow', 'lessons', 'open', 'close'], description: '표의 id' }, row: { type: 'object', additionalProperties: { type: 'string' }, description: '열 키 → 값. 열 키는 get_schema 의 columns' } } },
+      description: '표에 행을 하나 덧붙인다. rubric·other·lessons 는 두 서식 공통, flow 는 단일교과용, strands(탐구 목록) 는 융합교과용. 표를 처음부터 채울 때는 apply_plan 의 g 에 행 배열을 넘기는 편이 낫다(빈 자리표시 행이 남지 않는다).',
+      inputSchema: { type: 'object', required: ['gridId', 'row'], properties: { mode: MODE, gridId: { type: 'string', enum: ['rubric', 'other', 'flow', 'lessons', 'strands'], description: '표의 id' }, row: { type: 'object', additionalProperties: { type: 'string' }, description: '열 키 → 값. 열 키는 get_schema 의 columns' } } },
       execute: ({ mode, gridId, row }) => {
         const r = P.addRow(mode || curMode(), gridId, row);
         if (r.ok) toast(`AI가 「${labelOf(r.mode, 'g', gridId)}」 표에 행을 추가했습니다${where(r.mode)}`);
-        return r;
-      }
-    },
-    {
-      name: 'add_card',
-      description: '융합교과용 3단계 「탐구 목록」 카드를 하나 덧붙인다(cardsId: inquiry). 카드의 열 키는 get_schema 의 fields.',
-      inputSchema: { type: 'object', required: ['cardsId', 'card'], properties: { mode: MODE, cardsId: { type: 'string', enum: ['inquiry'] }, card: { type: 'object', additionalProperties: { type: 'string' }, description: '필드 키 → 값 (hour, topic, phase, q, act, watch, how)' } } },
-      execute: ({ mode, cardsId, card }) => {
-        const r = P.addCard(mode || curMode(), cardsId, card);
-        if (r.ok) toast(`AI가 「${labelOf(r.mode, 'c', cardsId)}」 카드를 추가했습니다${where(r.mode)}`);
         return r;
       }
     },
