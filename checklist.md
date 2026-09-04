@@ -17,10 +17,10 @@
 - [x] 검증 — 두 번 생성해 `git status` 변화 없음 · 브라우저 `getSchema()` === fetch(schema.json) · 팩 30줄 이내 · 실제 채팅 1곳에서 JSON 받아 반영 ← **사용자 실측 대기**
 
 ## 커밋 3 · 붙여넣기 대화상자 + `#plan=` 링크
-- [ ] `index.html` — `<dialog id="pasteDlg">`, 메뉴 「📋 AI 답변 붙여넣기로 불러오기」, `.dd-menu` 스크롤, CSS
-- [ ] `app.js` — `extractJSON`, `openPasteDialog`, `applyPasted`, `loadFromHash`, `growAll`/input 핸들러 `data-kind` 가드
-- [ ] `index.html` — 오리진 트라이얼 meta 자리(주석)
-- [ ] 검증 — 펜스/설명/순수 JSON 세 형태 · 깨진 JSON 메시지 · rejected 목록 잔류 · 해시 → 대화상자 미리 채움·해시 제거 · 상한 초과 토스트 · 375px
+- [x] `index.html` — `<dialog id="pasteDlg">`, 메뉴 「📋 AI 답변 붙여넣기로 불러오기」, `.dd-menu` 스크롤, CSS
+- [x] `app.js` — `extractJSON`, `openPasteDialog`, `applyPasted`, `loadFromHash`, `growAll`/input 핸들러 `data-kind` 가드
+- [x] `index.html` — 오리진 트라이얼 meta 자리(주석)
+- [x] 검증 — 펜스/설명/순수 JSON 세 형태 · 깨진 JSON 메시지 · rejected 목록 잔류 · 해시 → 대화상자 미리 채움·해시 제거 · 상한 초과 토스트 · 375px
 
 ## 커밋 4 · WebMCP
 - [ ] `webmcp.js` — 기능 감지, 도구 7개 등록, `safe()` 래퍼, `P.webmcp` 가드

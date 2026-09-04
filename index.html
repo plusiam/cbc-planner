@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>개념 기반 프로젝트 설계 웹학습지 — 단일교과 · 융합교과</title>
 <meta name="description" content="개념 기반 프로젝트 설계안(0~3단계)을 브라우저에서 바로 작성하는 웹학습지. 단일교과용과 융합교과용 서식을 한 페이지에서 전환합니다.">
+<!-- WebMCP 오리진 트라이얼(Chrome 149~156): https://plusiam.github.io 오리진으로 토큰을 발급받으면 주석을 풀고 content 를 채운다.
+     없어도 chrome://flags/#enable-webmcp-testing 으로 시험할 수 있다.
+<meta http-equiv="origin-trial" content=""> -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -104,6 +107,18 @@
   .dd-item .t { font-size: 9.5pt; font-weight: 600; color: var(--ink); }
   .dd-item .d { font-size: 8.5pt; color: var(--ink-3); }
   .dd-sep { height: 1px; background: var(--line-2); margin: 4px 0; }
+  .dd-menu { max-height: calc(100vh - var(--topbar-h, 96px) - 20px); overflow-y: auto; }   /* 항목이 9개라 좁은 화면에서 잘린다 */
+
+  /* AI 답변 붙여넣기 대화상자 */
+  dialog.paste { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; width: min(680px, calc(100vw - 32px)); box-shadow: var(--shadow); font-family: inherit; color: var(--ink); }
+  dialog.paste::backdrop { background: rgba(31,41,51,.35); }
+  dialog.paste h3 { margin: 0 0 6px; font-size: 12pt; }
+  dialog.paste p.d { font-size: 9pt; color: var(--ink-3); margin: 0 0 8px; }
+  dialog.paste textarea.paste { width: 100%; min-height: 180px; resize: vertical; overflow: auto; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9pt; line-height: 1.5; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+  dialog.paste label { display: block; font-size: 9.5pt; margin: 8px 0 4px; }
+  dialog.paste label span { color: var(--ink-3); font-size: 9pt; }
+  dialog.paste .msg { font-size: 9pt; color: var(--danger); min-height: 1.3em; margin: 4px 0 10px; white-space: pre-wrap; }
+  dialog.paste .row { display: flex; justify-content: flex-end; gap: 8px; }
 
   /* ===== 본문 ===== */
   .sheet {
@@ -327,6 +342,7 @@
         <div class="dd-sep"></div>
         <div class="dd-label">AI가 짠 설계안 가져오기</div>
         <button class="dd-item" onclick="copyPromptPack();closeMenu()"><span class="t">🤖 AI에게 서식 알려주기</span><span class="d">안내문을 클립보드로 — Claude·ChatGPT·Gemini 채팅창에 붙여넣고 설계안 부탁하기</span></button>
+        <button class="dd-item" onclick="openPasteDialog();closeMenu()"><span class="t">📋 AI 답변 붙여넣기로 불러오기</span><span class="d">채팅에서 받은 JSON을 붙여넣어 서식에 채우기</span></button>
         <div class="dd-sep"></div>
         <div class="dd-label">이어서 작업하기</div>
         <button class="dd-item" onclick="downloadJSON();closeMenu()"><span class="t">💾 작업 파일(.json) 저장</span><span class="d">다른 컴퓨터에서 이어 쓰거나 제출용으로</span></button>
@@ -363,6 +379,16 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ===== AI 답변 붙여넣기 대화상자 (#plan= 링크도 여기로 들어온다) ===== -->
+<dialog id="pasteDlg" class="paste no-print">
+  <h3>📋 AI 답변 붙여넣기로 불러오기</h3>
+  <p class="d">채팅에서 받은 JSON을 붙여넣으세요. 코드 블록 표시나 앞뒤 설명이 섞여 있어도 됩니다.</p>
+  <textarea id="pasteBox" class="paste" spellcheck="false" placeholder='{"app":"cbc-design-worksheet", "mode":"single", "single":{"f":{ … }}}'></textarea>
+  <label><input type="checkbox" id="pasteMerge" checked> 답변에 있는 칸만 바꾸기 <span>(끄면 서식을 비우고 새로 채웁니다)</span></label>
+  <div class="msg" id="pasteMsg"></div>
+  <div class="row"><button class="btn" onclick="document.getElementById('pasteDlg').close()">닫기</button><button class="btn primary" onclick="applyPasted()">불러오기</button></div>
+</dialog>
 
 <script src="schema-single.js"></script>
 <script src="schema-fusion.js"></script>

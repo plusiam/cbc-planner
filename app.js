@@ -32,7 +32,7 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 function autoGrow(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
-function growAll(root = document) { root.querySelectorAll('textarea').forEach(autoGrow); }
+function growAll(root = document) { root.querySelectorAll('textarea[data-kind]').forEach(autoGrow); }   // 붙여넣기 상자는 제외
 
 // ---------- 초기 행 데이터 ----------
 // gridInitRows 는 schema-flat.js 에 있다. st 를 넘기면 현재 서식이 아닌 쪽 상태에도 쓸 수 있다.
@@ -359,7 +359,7 @@ function cardMove(id, i, d) {
 // ---------- 입력 → 상태 반영 ----------
 document.addEventListener('input', e => {
   const el = e.target;
-  if (el.tagName !== 'TEXTAREA') return;
+  if (el.tagName !== 'TEXTAREA' || !el.dataset.kind) return;   // 서식 칸만 (붙여넣기 상자는 제외)
   autoGrow(el);
   const d = el.dataset, m = cur();
   if (d.kind === 'f') m.f[d.key] = el.value;
@@ -697,6 +697,49 @@ function setCheck(mode, id, on) {
 // 콘솔·Playwright·브라우저 확장·webmcp.js 가 모두 이 표면을 쓴다. state 등은 const 라 window 에 없다.
 window.cbcPlanner = { applyPlan, getPlan, setField, addRow, addCard, setCheck, setMode, getSchema };
 
+// ---------- AI 답변 붙여넣기 · #plan= 링크 ----------
+const PASTE_MAX = 1000000, HASH_MAX = 200000;   // 글자 수. 설계안 하나는 보통 10~20KB
+function openPasteDialog(text) {
+  $('#pasteBox').value = text || ''; $('#pasteMsg').textContent = '';
+  $('#pasteDlg').showModal(); $('#pasteBox').focus();
+}
+// ```json … ``` 펜스 → 없으면 첫 { 부터 마지막 } 까지. 설명 문장이 섞인 답변도 받는다.
+function extractJSON(text) {
+  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/i); if (m) return m[1];
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  return a >= 0 && b > a ? text.slice(a, b + 1) : text;
+}
+function applyPasted() {
+  const raw = $('#pasteBox').value, msg = $('#pasteMsg');
+  if (raw.length > PASTE_MAX) { msg.textContent = '너무 큽니다 — 작업 파일(.json)로 저장해 불러오세요.'; return; }
+  let d;
+  try { d = JSON.parse(extractJSON(raw)); }
+  catch (e) { msg.textContent = 'JSON을 읽을 수 없습니다. AI에게 "JSON만 코드 블록 하나로 다시 출력해 달라"고 부탁해 보세요.'; return; }
+  if (d && d.app && d.app !== 'cbc-design-worksheet') { msg.textContent = '이 웹학습지용 JSON이 아닙니다.'; return; }
+  const merge = $('#pasteMerge').checked;
+  if (!merge && !confirm('현재 서식의 입력 내용을 지우고 새로 채웁니다. 계속할까요?')) return;
+  const r = applyPlan(d, { merge });
+  if (!r.ok) { msg.textContent = r.rejected[0].reason; return; }
+  toast(`설계안을 불러왔습니다 — 칸 ${r.applied.f} · 표 ${r.applied.g}행 · 카드 ${r.applied.c}`);
+  if (r.rejected.length) {   // 대화상자를 열어 둔 채 무엇을 건너뛰었는지 보여 준다
+    msg.textContent = `서식에 없는 항목 ${r.rejected.length}건은 건너뛰었습니다: ` + r.rejected.slice(0, 8).map(x => x.path).join(', ') + (r.rejected.length > 8 ? ' …' : '');
+    return;
+  }
+  $('#pasteDlg').close();
+}
+// #plan=<base64url(JSON)> — 채팅이 만들어 준 링크. 곧바로 적용하지 않고 대화상자에 미리 채운다(링크 하나로 작업 내용이 덮이지 않게).
+function b64urlToUtf8(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4);
+  return new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0)));
+}
+function loadFromHash() {
+  const m = location.hash.match(/^#plan=([A-Za-z0-9\-_=]+)$/); if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);   // 새로 고침해도 다시 묻지 않도록 해시를 지운다
+  if (m[1].length > HASH_MAX) { toast('링크가 너무 깁니다 — 「AI 답변 붙여넣기로 불러오기」를 이용하세요'); return; }
+  let text; try { text = b64urlToUtf8(m[1]); } catch (e) { toast('링크에 담긴 설계안을 읽을 수 없습니다'); return; }
+  openPasteDialog(text);
+}
+
 // ---------- 정적 HTML (저장용·빈 양식 인쇄용) ----------
 function buildStaticHTML(blank) {
   const s = schema();
@@ -746,3 +789,4 @@ renderAll();
 syncTopbarH();
 $('#refpanel').classList.toggle('open', state.refsOpen);
 $('#helpBtn').textContent = state.helpOpen ? 'ⓘ 안내 접기' : 'ⓘ 안내 펼치기';
+loadFromHash(); window.addEventListener('hashchange', loadFromHash);
