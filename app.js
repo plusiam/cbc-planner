@@ -14,7 +14,7 @@ const ORDER_HINT = {
 };
 // 참조 패널에 띄울 칸 (앞 단계에서 정한 것)
 const REFS = {
-  single: [['단원명 (= 핵심 질문)', 'unit-name'], ['성취기준', 'standards'], ['핵심 개념', 'concept'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['학습 흐름 소주제', 'g:flow.topic'], ['수행과제', 'task-name'], ['준거(S)', 'criteria']],
+  single: [['단원명 (= 핵심 질문)', 'unit-name'], ['성취기준', 'standards'], ['개념적 렌즈', 'lens'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['학습 흐름 소주제', 'g:flow.topic'], ['수행과제', 'task-name'], ['준거(S)', 'criteria']],
   fusion: [['프로젝트명', 'project-name'], ['성취기준', 'standards'], ['개념적 렌즈', 'lens'], ['단원 수준 핵심 아이디어', 'idea-unit'], ['핵심 질문', 'eq'], ['탐구 목록', 'g:strands.task'], ['수행과제명', 'task-name'], ['준거(S)', 'criteria']]
 };
 function emptyState() { return { f: {}, g: {}, c: {}, k: {} }; }
